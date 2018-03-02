@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ"
+        crossorigin="anonymous">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <title>Geo Code</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 id="text-center">Enter Location</h2>
+        <form id="location-form">
+            <input id="location-input" type="text" class="form-control form-control-lg">
+            <i id="search" class="fa fa-search"></i>
+        </form>
+
+        <div class="row">
+            <div class="col">
+                <div>
+                    <br>
+                    <div class="card-block" id="formatted-address">
+                    </div>
+                    <div class="card-block" id="address-components">
+                    </div>
+                    <div class="card-block" id="geometry">
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <h1>My GoogleMaps</h1>
+                <div id="map" style="height: 100%; width: 100%">
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        // Call geocode
+        // geocode();
+
+        // Get location form
+        // var locationForm = document.getElementById("location-form");
+        // Listen for submition
+
+        // Search button
+        var search = document.getElementById("search");
+        search.addEventListener('click', () => {
+            geocode();
+
+        });
+
+        function geocode() {
+            // Get address
+            var location = document.getElementById("location-input").value;
+
+            // Request
+            axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+                    params: {
+                        address: location,
+                        key: 'AIzaSyClWoUc_kXIhYU0XFOqaI1ZzZPMDEy8oJY'
+                    }
+                })
+                .then((res) => {
+                    // Formatted stuff
+                    var address = res.data.results[0].formatted_address;
+                    var addressOuput =
+                        `
+                            <ul class="list-group">
+                            <li class="list-group-item"> ${address} </li>
+                            </ul>
+                        `;
+                    // Address components
+                    var addressComponents = res.data.results[0].address_components;
+                    var addressComponentsOutput = `<ul class="list-group">`;
+                    for (let i = 0; i < addressComponents.length; i++) {
+                        addressComponentsOutput +=
+                            `
+                                <li class="list-group-item">
+                                    <strong>${addressComponents[i].types[0]}</strong>: ${addressComponents[i].long_name}
+                                </li>
+                            `
+                    }
+                    addressComponentsOutput += `</ul>`;
+
+                    // Geometry
+                    var lat = res.data.results[0].geometry.location.lat;
+                    var lng = res.data.results[0].geometry.location.lng;
+
+                    var geomtryOutput =
+                        `<ul class="list-group">
+                            <li class="list-group-item" >
+                                <strong>Lat</strong>: <span id="lat">${ lat }</span>
+                            </li >
+                            <li class="list-group-item" >
+                                <strong>Lng</strong>: <span id="lng">${ lng }</span>
+                            </li >
+                        </ul>`;
+
+                    // Ouput to web
+                    document.getElementById("formatted-address").innerHTML = addressOuput;
+                    document.getElementById("address-components").innerHTML = addressComponentsOutput;
+                    document.getElementById("geometry").innerHTML = geomtryOutput;
+
+                    var coords = {
+                        lat: Number(lat),
+                        lng: Number(lng)
+                    }
+
+                    initMap(coords);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
+
+        function initMap(coords) {
+            var options = {
+                zoom: 14,
+                center: {
+                    lat: coords.lat,
+                    lng: coords.lng,
+                }
+            }
+            // Create map
+            var map = new google.maps.Map(document.getElementById("map"), options);
+
+            var marker1 = {
+                coords: {
+                    lat: coords.lat,
+                    lng: coords.lng
+                },
+                content: "<h1>You are here</h1>"
+            }
+
+            addMarker(marker1);
+
+            // Add marker
+            function addMarker(prop) {
+                var marker = new google.maps.Marker({
+                    position: prop.coords,
+                    map: map
+                });
+                // check Icon 
+                if (prop.icon) {
+                    marker.setIcon(prop.icon);
+                }
+                // check content
+                if (prop.content) {
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: prop.content
+                    })
+                }
+                // Popup window
+                marker.addListener("click", () => {
+                    infoWindow.open(map, marker);
+                })
+            }
+
+            // Listen for click on map
+            google.maps.event.addListener(map, "click", (event) => {
+                // Add marker 
+                var i = event.latLng.toJSON();
+                alert("lat" + i.lat + "\nlng" + i.lng);
+                addMarker({
+                    coords: event.latLng
+                })
+            })
+        }
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyClWoUc_kXIhYU0XFOqaI1ZzZPMDEy8oJY">
+    </script>
+</body>
+
+</html>
